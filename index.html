@@ -3913,7 +3913,7 @@ function _typeof(t){return(_typeof="function"==typeof Symbol&&"symbol"==typeof S
     });
   </script>
 
-  <script>
+<script>
 
     // Variant configuration with correct prices and redirect URLs
 const variantConfig = {
@@ -3940,9 +3940,52 @@ const variantConfig = {
   }
 };
 
+// Global variable to track selected variant
+let selectedVariantId = '6f65cf36-96a8-45be-8a3c-a2e57757e5f6'; // Default to first variant
+
+// Function to handle the redirect - multiple approaches to ensure it works
+function handleRedirect() {
+  console.log('Add to cart clicked, selected variant:', selectedVariantId);
+  
+  let redirectUrl;
+  
+  // Get redirect URL from selected variant
+  if (selectedVariantId && variantConfig[selectedVariantId]) {
+    redirectUrl = variantConfig[selectedVariantId].redirectUrl;
+  } else {
+    // Fallback: try to get currently checked radio button
+    const checkedRadio = document.querySelector('input[name="kaching-bundles-deal-af0391ccbf12b8"]:checked');
+    if (checkedRadio && variantConfig[checkedRadio.value]) {
+      redirectUrl = variantConfig[checkedRadio.value].redirectUrl;
+      selectedVariantId = checkedRadio.value;
+    } else {
+      // Final fallback
+      redirectUrl = 'https://example.com/checkout/default';
+    }
+  }
+  
+  console.log('Redirecting to:', redirectUrl);
+  
+  // Multiple redirect methods to ensure it works
+  try {
+    // Method 1: Direct assignment
+    window.location.href = redirectUrl;
+  } catch (e) {
+    console.log('Method 1 failed, trying method 2');
+    try {
+      // Method 2: Using replace
+      window.location.replace(redirectUrl);
+    } catch (e2) {
+      console.log('Method 2 failed, trying method 3');
+      // Method 3: Using assign
+      window.location.assign(redirectUrl);
+    }
+  }
+}
+
 // Initialize the variant handler
 function initializeVariantHandler() {
-  let selectedVariantId = null;
+  console.log('Initializing variant handler...');
   
   // Update prices on page load
   updateVariantPrices();
@@ -3957,57 +4000,111 @@ function initializeVariantHandler() {
   
   // Add event listeners to radio buttons
   const radioButtons = document.querySelectorAll('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
+  console.log('Found radio buttons:', radioButtons.length);
+  
   radioButtons.forEach(radio => {
     radio.addEventListener('change', function() {
       if (this.checked) {
         selectedVariantId = this.value;
         updateSelectedVariant(selectedVariantId);
-        console.log('Selected variant:', selectedVariantId);
+        console.log('Selected variant changed to:', selectedVariantId);
       }
     });
   });
   
-  // Handle add to cart button click
-  const addToCartButton = document.querySelector('.buy-buttons button[type="submit"]');
+  // Multiple ways to target the add to cart button
+  const buttonSelectors = [
+    '.buy-buttons button[type="submit"]',
+    '.buy-buttons button',
+    'button[type="submit"]',
+    '.button--xl',
+    '[is="custom-button"]'
+  ];
+  
+  let addToCartButton = null;
+  
+  for (let selector of buttonSelectors) {
+    addToCartButton = document.querySelector(selector);
+    if (addToCartButton) {
+      console.log('Found add to cart button with selector:', selector);
+      break;
+    }
+  }
+  
   if (addToCartButton) {
-    addToCartButton.addEventListener('click', function(e) {
-      e.preventDefault(); // Prevent default form submission
-      
-      // Ensure we have a selected variant
-      if (!selectedVariantId) {
-        const checkedRadio = document.querySelector('input[name="kaching-bundles-deal-af0391ccbf12b8"]:checked');
-        if (checkedRadio) {
-          selectedVariantId = checkedRadio.value;
-        }
-      }
-      
-      // Always redirect if we have a variant config
-      if (selectedVariantId && variantConfig[selectedVariantId]) {
-        const redirectUrl = variantConfig[selectedVariantId].redirectUrl;
-        console.log('Redirecting to:', redirectUrl);
-        
-        // Show loading state briefly before redirect
-        this.classList.add('loading');
-        
-        setTimeout(() => {
-          window.location.href = redirectUrl;
-        }, 300);
-      } else {
-        // Fallback redirect if no specific variant is selected
-        console.log('No variant selected, using fallback redirect');
-        window.location.href = 'https://example.com/checkout/default';
-      }
+    // Remove any existing event listeners and add new ones
+    const newButton = addToCartButton.cloneNode(true);
+    addToCartButton.parentNode.replaceChild(newButton, addToCartButton);
+    
+    // Add multiple event listeners to ensure it works
+    newButton.addEventListener('click', function(e) {
+      console.log('Button clicked via click event');
+      e.preventDefault();
+      e.stopPropagation();
+      handleRedirect();
+      return false;
     });
+    
+    newButton.addEventListener('mousedown', function(e) {
+      console.log('Button mousedown event');
+      setTimeout(() => {
+        handleRedirect();
+      }, 100);
+    });
+    
+    // Also intercept form submission
+    const form = newButton.closest('form');
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        console.log('Form submit intercepted');
+        e.preventDefault();
+        e.stopPropagation();
+        handleRedirect();
+        return false;
+      });
+    }
+    
+    // Make button always redirect on any interaction
+    newButton.style.cursor = 'pointer';
+    newButton.setAttribute('onclick', 'return false;');
+    
+  } else {
+    console.error('Add to cart button not found!');
+    
+    // Create a fallback button if none found
+    setTimeout(() => {
+      const fallbackButton = document.createElement('button');
+      fallbackButton.textContent = 'Add to Cart';
+      fallbackButton.className = 'button button--xl';
+      fallbackButton.style.cssText = 'background: #a6ccf8; color: white; padding: 12px 24px; border: none; cursor: pointer; margin: 10px;';
+      
+      fallbackButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        handleRedirect();
+      });
+      
+      // Try to insert after the existing buy-buttons element
+      const buyButtons = document.querySelector('.buy-buttons');
+      if (buyButtons) {
+        buyButtons.appendChild(fallbackButton);
+      } else {
+        document.body.appendChild(fallbackButton);
+      }
+    }, 1000);
   }
 }
 
 // Update variant prices in the DOM
 function updateVariantPrices() {
+  console.log('Updating variant prices...');
+  
   Object.keys(variantConfig).forEach(variantId => {
     const config = variantConfig[variantId];
     const variantBar = document.querySelector(`[data-deal-bar-id="${variantId}"]`);
     
     if (variantBar) {
+      console.log('Updating variant:', variantId);
+      
       // Update price
       const priceElement = variantBar.querySelector('.kaching-bundles__bar-price');
       if (priceElement) {
@@ -4049,7 +4146,7 @@ function updateSelectedVariant(variantId) {
   }
 }
 
-// Add CSS for loading state
+// Add CSS for loading state and styling
 function addLoadingStyles() {
   const style = document.createElement('style');
   style.textContent = `
@@ -4063,31 +4160,70 @@ function addLoadingStyles() {
     }
     
     .kaching-bundles__bar--selected {
-      border: 2px solid #a6ccf8;
-      background-color: rgba(166, 204, 248, 0.1);
+      border: 2px solid #a6ccf8 !important;
+      background-color: rgba(166, 204, 248, 0.1) !important;
+    }
+    
+    .buy-buttons button {
+      position: relative !important;
+      z-index: 9999 !important;
     }
   `;
   document.head.appendChild(style);
 }
 
-// Initialize when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', function() {
-    addLoadingStyles();
-    initializeVariantHandler();
-  });
-} else {
+// Force initialization with multiple triggers
+function forceInit() {
+  console.log('Force initializing...');
   addLoadingStyles();
   initializeVariantHandler();
 }
 
-// Export for external use if needed
+// Multiple initialization triggers
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', forceInit);
+} else {
+  forceInit();
+}
+
+// Backup initialization
+setTimeout(forceInit, 500);
+setTimeout(forceInit, 1000);
+setTimeout(forceInit, 2000);
+
+// Also try when page is fully loaded
+window.addEventListener('load', forceInit);
+
+// Global click handler as ultimate fallback
+document.addEventListener('click', function(e) {
+  const target = e.target;
+  
+  // Check if clicked element is an add to cart button
+  if (target.matches('.buy-buttons button') || 
+      target.matches('button[type="submit"]') || 
+      target.matches('.button--xl') ||
+      target.closest('.buy-buttons button')) {
+    
+    console.log('Global click handler triggered');
+    e.preventDefault();
+    e.stopPropagation();
+    handleRedirect();
+    return false;
+  }
+});
+
+// Export for external use
 window.nebulizer = {
   variantConfig,
+  selectedVariantId,
+  handleRedirect,
   updateVariantPrices,
-  initializeVariantHandler
+  initializeVariantHandler,
+  forceInit
 };
-    
+
+// Console command for manual testing
+console.log('Nebulizer redirect script loaded. Test with: window.nebulizer.handleRedirect()');
 </script>
 
 </html>
