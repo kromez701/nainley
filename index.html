@@ -3913,4 +3913,181 @@ function _typeof(t){return(_typeof="function"==typeof Symbol&&"symbol"==typeof S
     });
   </script>
 
+  <script>
+
+    // Variant configuration with correct prices and redirect URLs
+const variantConfig = {
+  '6f65cf36-96a8-45be-8a3c-a2e57757e5f6': {
+    price: '£29.95',
+    originalPrice: '£100.00',
+    redirectUrl: 'https://example.com/checkout/buy-1-nebulizer',
+    title: '1 Nebulizer',
+    label: 'Free Shipping'
+  },
+  '2KFU': {
+    price: '£39.95',
+    originalPrice: '£300.00',
+    redirectUrl: 'https://example.com/checkout/buy-2-nebulizers',
+    title: '2 Nebulizers',
+    label: '+ 1 For free'
+  },
+  'Qey0': {
+    price: '£49.95',
+    originalPrice: '£500.00',
+    redirectUrl: 'https://example.com/checkout/buy-3-nebulizers',
+    title: '3 nebulizers',
+    label: '+ 2 For free'
+  }
+};
+
+// Initialize the variant handler
+function initializeVariantHandler() {
+  let selectedVariantId = null;
+  
+  // Update prices on page load
+  updateVariantPrices();
+  
+  // Set default selection to first variant
+  const firstRadio = document.querySelector('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
+  if (firstRadio) {
+    firstRadio.checked = true;
+    selectedVariantId = firstRadio.value;
+    updateSelectedVariant(selectedVariantId);
+  }
+  
+  // Add event listeners to radio buttons
+  const radioButtons = document.querySelectorAll('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
+  radioButtons.forEach(radio => {
+    radio.addEventListener('change', function() {
+      if (this.checked) {
+        selectedVariantId = this.value;
+        updateSelectedVariant(selectedVariantId);
+        console.log('Selected variant:', selectedVariantId);
+      }
+    });
+  });
+  
+  // Handle add to cart button click
+  const addToCartButton = document.querySelector('.buy-buttons button[type="submit"]');
+  if (addToCartButton) {
+    addToCartButton.addEventListener('click', function(e) {
+      e.preventDefault(); // Prevent default form submission
+      
+      // Ensure we have a selected variant
+      if (!selectedVariantId) {
+        const checkedRadio = document.querySelector('input[name="kaching-bundles-deal-af0391ccbf12b8"]:checked');
+        if (checkedRadio) {
+          selectedVariantId = checkedRadio.value;
+        }
+      }
+      
+      // Always redirect if we have a variant config
+      if (selectedVariantId && variantConfig[selectedVariantId]) {
+        const redirectUrl = variantConfig[selectedVariantId].redirectUrl;
+        console.log('Redirecting to:', redirectUrl);
+        
+        // Show loading state briefly before redirect
+        this.classList.add('loading');
+        
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 300);
+      } else {
+        // Fallback redirect if no specific variant is selected
+        console.log('No variant selected, using fallback redirect');
+        window.location.href = 'https://example.com/checkout/default';
+      }
+    });
+  }
+}
+
+// Update variant prices in the DOM
+function updateVariantPrices() {
+  Object.keys(variantConfig).forEach(variantId => {
+    const config = variantConfig[variantId];
+    const variantBar = document.querySelector(`[data-deal-bar-id="${variantId}"]`);
+    
+    if (variantBar) {
+      // Update price
+      const priceElement = variantBar.querySelector('.kaching-bundles__bar-price');
+      if (priceElement) {
+        priceElement.textContent = config.price;
+      }
+      
+      // Update original price
+      const originalPriceElement = variantBar.querySelector('.kaching-bundles__bar-full-price');
+      if (originalPriceElement) {
+        originalPriceElement.textContent = config.originalPrice;
+      }
+      
+      // Update title
+      const titleElement = variantBar.querySelector('.kaching-bundles__bar-title');
+      if (titleElement) {
+        titleElement.textContent = config.title;
+      }
+      
+      // Update label
+      const labelElement = variantBar.querySelector('.kaching-bundles__bar-label');
+      if (labelElement) {
+        labelElement.textContent = config.label;
+      }
+    }
+  });
+}
+
+// Update selected variant styling
+function updateSelectedVariant(variantId) {
+  // Remove selected class from all variants
+  document.querySelectorAll('.kaching-bundles__bar').forEach(bar => {
+    bar.classList.remove('kaching-bundles__bar--selected');
+  });
+  
+  // Add selected class to current variant
+  const selectedBar = document.querySelector(`[data-deal-bar-id="${variantId}"]`);
+  if (selectedBar) {
+    selectedBar.classList.add('kaching-bundles__bar--selected');
+  }
+}
+
+// Add CSS for loading state
+function addLoadingStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .button.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    
+    .button.loading .button__loader {
+      display: inline-block;
+    }
+    
+    .kaching-bundles__bar--selected {
+      border: 2px solid #a6ccf8;
+      background-color: rgba(166, 204, 248, 0.1);
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    addLoadingStyles();
+    initializeVariantHandler();
+  });
+} else {
+  addLoadingStyles();
+  initializeVariantHandler();
+}
+
+// Export for external use if needed
+window.nebulizer = {
+  variantConfig,
+  updateVariantPrices,
+  initializeVariantHandler
+};
+    
+</script>
+
 </html>
