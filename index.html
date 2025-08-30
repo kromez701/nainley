@@ -3914,7 +3914,8 @@ function _typeof(t){return(_typeof="function"==typeof Symbol&&"symbol"==typeof S
   </script>
 
 <script>
-  // Variant configuration with correct prices and redirect URLs
+
+    // Variant configuration with correct prices and redirect URLs
 const variantConfig = {
   '6f65cf36-96a8-45be-8a3c-a2e57757e5f6': {
     price: '£29.95',
@@ -3939,85 +3940,189 @@ const variantConfig = {
   }
 };
 
-// Global variable to track selected variant
-let selectedVariantId = '6f65cf36-96a8-45be-8a3c-a2e57757e5f6'; // Default to first variant
+// Global variable to track selected variant - use a more reliable method
+let currentSelectedVariant = '6f65cf36-96a8-45be-8a3c-a2e57757e5f6';
 
-// Function to handle the redirect - multiple approaches to ensure it works
-function handleRedirect() {
-  console.log('Add to cart clicked, selected variant:', selectedVariantId);
+// Function to get the ACTUAL selected variant with multiple detection methods
+function getRealSelectedVariant() {
+  console.log('=== DETECTING SELECTED VARIANT ===');
   
-  let redirectUrl;
+  // Method 1: Check for checked radio button
+  const checkedRadio = document.querySelector('input[name="kaching-bundles-deal-af0391ccbf12b8"]:checked');
+  if (checkedRadio) {
+    console.log('Method 1 - Found checked radio:', checkedRadio.value);
+    return checkedRadio.value;
+  }
   
-  // Get redirect URL from selected variant
-  if (selectedVariantId && variantConfig[selectedVariantId]) {
-    redirectUrl = variantConfig[selectedVariantId].redirectUrl;
-  } else {
-    // Fallback: try to get currently checked radio button
-    const checkedRadio = document.querySelector('input[name="kaching-bundles-deal-af0391ccbf12b8"]:checked');
-    if (checkedRadio && variantConfig[checkedRadio.value]) {
-      redirectUrl = variantConfig[checkedRadio.value].redirectUrl;
-      selectedVariantId = checkedRadio.value;
-    } else {
-      // Final fallback
-      redirectUrl = 'https://example.com/checkout/default';
+  // Method 2: Check for selected class on bars
+  const selectedBar = document.querySelector('.kaching-bundles__bar--selected');
+  if (selectedBar) {
+    const variantId = selectedBar.getAttribute('data-deal-bar-id');
+    console.log('Method 2 - Found selected bar:', variantId);
+    return variantId;
+  }
+  
+  // Method 3: Check all radios and find the checked one manually
+  const allRadios = document.querySelectorAll('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
+  for (let radio of allRadios) {
+    if (radio.checked) {
+      console.log('Method 3 - Found checked radio manually:', radio.value);
+      return radio.value;
     }
   }
   
-  console.log('Redirecting to:', redirectUrl);
+  // Method 4: Use the stored current selection
+  console.log('Method 4 - Using stored selection:', currentSelectedVariant);
+  return currentSelectedVariant;
+}
+
+// Function to handle the redirect with extensive debugging
+function handleRedirect() {
+  console.log('🚀 ADD TO CART CLICKED 🚀');
   
-  // Multiple redirect methods to ensure it works
-  try {
-    // Method 1: Direct assignment
-    window.location.href = redirectUrl;
-  } catch (e) {
-    console.log('Method 1 failed, trying method 2');
-    try {
-      // Method 2: Using replace
-      window.location.replace(redirectUrl);
-    } catch (e2) {
-      console.log('Method 2 failed, trying method 3');
-      // Method 3: Using assign
-      window.location.assign(redirectUrl);
+  // Get the selected variant using all methods
+  const detectedVariant = getRealSelectedVariant();
+  console.log('Final detected variant:', detectedVariant);
+  
+  // Double-check by examining all radio buttons
+  console.log('=== RADIO BUTTON STATES ===');
+  const allRadios = document.querySelectorAll('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
+  allRadios.forEach(radio => {
+    console.log(`Radio ${radio.value}: checked=${radio.checked}`);
+  });
+  
+  // Get redirect URL
+  let redirectUrl;
+  if (detectedVariant && variantConfig[detectedVariant]) {
+    redirectUrl = variantConfig[detectedVariant].redirectUrl;
+    console.log('✅ Using redirect URL for variant', detectedVariant, ':', redirectUrl);
+  } else {
+    redirectUrl = 'https://example.com/checkout/default';
+    console.log('❌ Using fallback redirect URL:', redirectUrl);
+  }
+  
+  // Force redirect with immediate execution
+  console.log('🎯 REDIRECTING NOW TO:', redirectUrl);
+  
+  // Use multiple redirect methods simultaneously
+  setTimeout(() => window.location.href = redirectUrl, 0);
+  setTimeout(() => window.location.replace(redirectUrl), 50);
+  window.location.href = redirectUrl;
+}
+
+// Enhanced variant selection handler
+function setupVariantSelection() {
+  console.log('🔧 Setting up variant selection...');
+  
+  // Get all the variant elements
+  const radioButtons = document.querySelectorAll('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
+  const labels = document.querySelectorAll('label[for*="af0391ccbf12b8"]');
+  const barContainers = document.querySelectorAll('.kaching-bundles__bar-container');
+  
+  console.log('Found elements:', {
+    radioButtons: radioButtons.length,
+    labels: labels.length,
+    barContainers: barContainers.length
+  });
+  
+  // Function to select a variant
+  function selectVariant(variantId, source) {
+    console.log(`🎯 SELECTING VARIANT: ${variantId} (from ${source})`);
+    currentSelectedVariant = variantId;
+    
+    // Update radio button
+    const radio = document.querySelector(`input[value="${variantId}"]`);
+    if (radio) {
+      radio.checked = true;
+      console.log('✅ Radio button checked for:', variantId);
     }
+    
+    // Update visual styling
+    updateSelectedVariant(variantId);
+    
+    // Log the current state
+    console.log('Current selection stored as:', currentSelectedVariant);
+  }
+  
+  // Add event listeners to radio buttons
+  radioButtons.forEach(radio => {
+    radio.addEventListener('change', function() {
+      if (this.checked) {
+        selectVariant(this.value, 'radio-change');
+      }
+    });
+    
+    radio.addEventListener('click', function() {
+      selectVariant(this.value, 'radio-click');
+    });
+  });
+  
+  // Add event listeners to labels
+  labels.forEach(label => {
+    label.addEventListener('click', function(e) {
+      const radioId = this.getAttribute('for');
+      const radio = document.getElementById(radioId);
+      if (radio) {
+        selectVariant(radio.value, 'label-click');
+      }
+    });
+  });
+  
+  // Add event listeners to entire bar containers
+  barContainers.forEach(container => {
+    container.addEventListener('click', function(e) {
+      const bar = this.closest('.kaching-bundles__bar');
+      if (bar) {
+        const variantId = bar.getAttribute('data-deal-bar-id');
+        if (variantId) {
+          selectVariant(variantId, 'container-click');
+        }
+      }
+    });
+  });
+  
+  // Also listen for any click on variant bars
+  document.querySelectorAll('.kaching-bundles__bar').forEach(bar => {
+    bar.addEventListener('click', function() {
+      const variantId = this.getAttribute('data-deal-bar-id');
+      if (variantId) {
+        selectVariant(variantId, 'bar-click');
+      }
+    });
+  });
+  
+  // Set initial selection
+  if (radioButtons.length > 0) {
+    selectVariant(radioButtons[0].value, 'initial-setup');
   }
 }
 
 // Initialize the variant handler
 function initializeVariantHandler() {
-  console.log('Initializing variant handler...');
+  console.log('🚀 Initializing variant handler...');
   
   // Update prices on page load
   updateVariantPrices();
   
-  // Set default selection to first variant
-  const firstRadio = document.querySelector('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
-  if (firstRadio) {
-    firstRadio.checked = true;
-    selectedVariantId = firstRadio.value;
-    updateSelectedVariant(selectedVariantId);
-  }
+  // Setup variant selection
+  setupVariantSelection();
   
-  // Add event listeners to radio buttons
-  const radioButtons = document.querySelectorAll('input[name="kaching-bundles-deal-af0391ccbf12b8"]');
-  console.log('Found radio buttons:', radioButtons.length);
+  // Setup add to cart button with multiple approaches
+  setupAddToCartButton();
+}
+
+// Setup add to cart button with debugging
+function setupAddToCartButton() {
+  console.log('🔘 Setting up add to cart button...');
   
-  radioButtons.forEach(radio => {
-    radio.addEventListener('change', function() {
-      if (this.checked) {
-        selectedVariantId = this.value;
-        updateSelectedVariant(selectedVariantId);
-        console.log('Selected variant changed to:', selectedVariantId);
-      }
-    });
-  });
-  
-  // Multiple ways to target the add to cart button
+  // Try multiple selectors to find the button
   const buttonSelectors = [
     '.buy-buttons button[type="submit"]',
     '.buy-buttons button',
     'button[type="submit"]',
     '.button--xl',
-    '[is="custom-button"]'
+    '[is="custom-button"]',
+    'buy-buttons button'
   ];
   
   let addToCartButton = null;
@@ -4025,85 +4130,66 @@ function initializeVariantHandler() {
   for (let selector of buttonSelectors) {
     addToCartButton = document.querySelector(selector);
     if (addToCartButton) {
-      console.log('Found add to cart button with selector:', selector);
+      console.log('✅ Found add to cart button with selector:', selector);
       break;
     }
   }
   
   if (addToCartButton) {
-    // Remove any existing event listeners and add new ones
+    // Remove existing event listeners by cloning
     const newButton = addToCartButton.cloneNode(true);
     addToCartButton.parentNode.replaceChild(newButton, addToCartButton);
     
-    // Add multiple event listeners to ensure it works
+    // Add our event listener
     newButton.addEventListener('click', function(e) {
-      console.log('Button clicked via click event');
+      console.log('🔥 BUTTON CLICKED! 🔥');
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       handleRedirect();
       return false;
     });
     
-    newButton.addEventListener('mousedown', function(e) {
-      console.log('Button mousedown event');
-      setTimeout(() => {
-        handleRedirect();
-      }, 100);
-    });
-    
-    // Also intercept form submission
+    // Also prevent form submission
     const form = newButton.closest('form');
     if (form) {
       form.addEventListener('submit', function(e) {
-        console.log('Form submit intercepted');
+        console.log('📋 Form submit prevented, redirecting instead');
         e.preventDefault();
-        e.stopPropagation();
         handleRedirect();
         return false;
       });
     }
     
-    // Make button always redirect on any interaction
-    newButton.style.cursor = 'pointer';
-    newButton.setAttribute('onclick', 'return false;');
-    
+    console.log('✅ Add to cart button setup complete');
   } else {
-    console.error('Add to cart button not found!');
-    
-    // Create a fallback button if none found
-    setTimeout(() => {
-      const fallbackButton = document.createElement('button');
-      fallbackButton.textContent = 'Add to Cart';
-      fallbackButton.className = 'button button--xl';
-      fallbackButton.style.cssText = 'background: #a6ccf8; color: white; padding: 12px 24px; border: none; cursor: pointer; margin: 10px;';
-      
-      fallbackButton.addEventListener('click', function(e) {
-        e.preventDefault();
-        handleRedirect();
-      });
-      
-      // Try to insert after the existing buy-buttons element
-      const buyButtons = document.querySelector('.buy-buttons');
-      if (buyButtons) {
-        buyButtons.appendChild(fallbackButton);
-      } else {
-        document.body.appendChild(fallbackButton);
-      }
-    }, 1000);
+    console.error('❌ Could not find add to cart button');
   }
+  
+  // Global click handler as backup
+  document.addEventListener('click', function(e) {
+    if (e.target.matches('.buy-buttons button') || 
+        e.target.matches('button[type="submit"]') || 
+        e.target.closest('.buy-buttons button')) {
+      
+      console.log('🌐 Global click handler activated');
+      e.preventDefault();
+      e.stopPropagation();
+      handleRedirect();
+      return false;
+    }
+  }, true);
 }
 
 // Update variant prices in the DOM
 function updateVariantPrices() {
-  console.log('Updating variant prices...');
+  console.log('💰 Updating variant prices...');
   
   Object.keys(variantConfig).forEach(variantId => {
     const config = variantConfig[variantId];
     const variantBar = document.querySelector(`[data-deal-bar-id="${variantId}"]`);
     
     if (variantBar) {
-      console.log('Updating variant:', variantId);
-      
       // Update price
       const priceElement = variantBar.querySelector('.kaching-bundles__bar-price');
       if (priceElement) {
@@ -4127,12 +4213,16 @@ function updateVariantPrices() {
       if (labelElement) {
         labelElement.textContent = config.label;
       }
+      
+      console.log(`✅ Updated variant ${variantId}: ${config.price}`);
     }
   });
 }
 
 // Update selected variant styling
 function updateSelectedVariant(variantId) {
+  console.log('🎨 Updating styling for variant:', variantId);
+  
   // Remove selected class from all variants
   document.querySelectorAll('.kaching-bundles__bar').forEach(bar => {
     bar.classList.remove('kaching-bundles__bar--selected');
@@ -4142,87 +4232,67 @@ function updateSelectedVariant(variantId) {
   const selectedBar = document.querySelector(`[data-deal-bar-id="${variantId}"]`);
   if (selectedBar) {
     selectedBar.classList.add('kaching-bundles__bar--selected');
+    console.log('✅ Added selected styling to:', variantId);
   }
 }
 
-// Add CSS for loading state and styling
-function addLoadingStyles() {
+// Add CSS for styling
+function addStyles() {
   const style = document.createElement('style');
   style.textContent = `
-    .button.loading {
-      pointer-events: none;
-      opacity: 0.7;
-    }
-    
-    .button.loading .button__loader {
-      display: inline-block;
-    }
-    
     .kaching-bundles__bar--selected {
-      border: 2px solid #a6ccf8 !important;
-      background-color: rgba(166, 204, 248, 0.1) !important;
+      border: 3px solid #a6ccf8 !important;
+      background-color: rgba(166, 204, 248, 0.2) !important;
+      box-shadow: 0 0 10px rgba(166, 204, 248, 0.5) !important;
     }
     
     .buy-buttons button {
+      cursor: pointer !important;
       position: relative !important;
-      z-index: 9999 !important;
     }
   `;
   document.head.appendChild(style);
 }
 
-// Force initialization with multiple triggers
-function forceInit() {
-  console.log('Force initializing...');
-  addLoadingStyles();
+// Initialize everything
+function initialize() {
+  console.log('🎬 STARTING NEBULIZER SCRIPT 🎬');
+  addStyles();
   initializeVariantHandler();
 }
 
 // Multiple initialization triggers
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', forceInit);
+  document.addEventListener('DOMContentLoaded', initialize);
 } else {
-  forceInit();
+  initialize();
 }
 
-// Backup initialization
-setTimeout(forceInit, 500);
-setTimeout(forceInit, 1000);
-setTimeout(forceInit, 2000);
+setTimeout(initialize, 100);
+setTimeout(initialize, 500);
+setTimeout(initialize, 1000);
 
-// Also try when page is fully loaded
-window.addEventListener('load', forceInit);
-
-// Global click handler as ultimate fallback
-document.addEventListener('click', function(e) {
-  const target = e.target;
-  
-  // Check if clicked element is an add to cart button
-  if (target.matches('.buy-buttons button') || 
-      target.matches('button[type="submit"]') || 
-      target.matches('.button--xl') ||
-      target.closest('.buy-buttons button')) {
-    
-    console.log('Global click handler triggered');
-    e.preventDefault();
-    e.stopPropagation();
-    handleRedirect();
-    return false;
-  }
-});
-
-// Export for external use
+// Export for debugging
 window.nebulizer = {
   variantConfig,
-  selectedVariantId,
+  currentSelectedVariant,
+  getRealSelectedVariant,
   handleRedirect,
-  updateVariantPrices,
-  initializeVariantHandler,
-  forceInit
+  initialize,
+  // Debug function
+  debug() {
+    console.log('=== NEBULIZER DEBUG INFO ===');
+    console.log('Current stored variant:', currentSelectedVariant);
+    console.log('Detected variant:', getRealSelectedVariant());
+    console.log('All radio states:');
+    document.querySelectorAll('input[name="kaching-bundles-deal-af0391ccbf12b8"]').forEach(radio => {
+      console.log(`${radio.value}: ${radio.checked}`);
+    });
+  }
 };
 
-// Console command for manual testing
-console.log('Nebulizer redirect script loaded. Test with: window.nebulizer.handleRedirect()');    
+console.log('🔧 Nebulizer script loaded! Use window.nebulizer.debug() to check status');
+
 </script>
 
 </html>
